@@ -1,9 +1,19 @@
 import { stringify } from 'querystring';
 import { history } from 'umi';
-import { fakeAccountLogin } from '@/services/login';
+import { login } from '@/services/login';
 import { setAuthority } from '@/utils/authority';
 import { getPageQuery } from '@/utils/utils';
 import { message } from 'antd';
+import { notification } from 'antd';
+
+const openNotificationWithIcon = (type, message, description) => {
+  notification[type]({
+    message: `${message}`,
+    description: `${description}`,
+    placement: 'bottomRight',
+  });
+};
+
 const Model = {
   namespace: 'login',
   state: {
@@ -11,13 +21,28 @@ const Model = {
   },
   effects: {
     *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+      const { userName: username, password } = payload;
+      let response;
+      try {
+        response = yield call(login, { username, password });
+      } catch {
+        openNotificationWithIcon(
+          'error',
+          'Tên tài khoản hoặc mật khẩu không đúng',
+          'Nhập từ từ thôi!',
+        );
+        return;
+      }
+
+      const { data } = response;
+      // console.log('Response ==>', response?.data);
       yield put({
         type: 'changeLoginStatus',
         payload: response,
       }); // Login successfully
 
-      if (response.status === 'ok') {
+      // console.log('token==>', response.accessToken);
+      if (data.accessToken) {
         const urlParams = new URL(window.location.href);
         const params = getPageQuery();
         message.success('🎉 🎉 🎉  登录成功！');
@@ -39,6 +64,9 @@ const Model = {
         }
 
         history.replace(redirect || '/');
+
+        // Login success alert
+        openNotificationWithIcon('success', 'Đăng nhập thành công', 'Gút chóp');
       }
     },
 

@@ -37,6 +37,7 @@ const Login = (props) => {
       type: 'login/login',
       payload: { ...values, type },
     });
+    // console.log('Values==>', values);
   };
 
   return (
